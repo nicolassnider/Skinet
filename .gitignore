@@ -362,4 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /client/.vscode
-/client/ssl
+
+/client/ssl/localhost-key.pem
+/client/ssl/localhost.pem
