@@ -365,3 +365,4 @@ FodyWeavers.xsd
 
 /client/ssl/localhost-key.pem
 /client/ssl/localhost.pem
+client/src/environoments/environment.development.ts
