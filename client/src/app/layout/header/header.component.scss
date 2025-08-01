@@ -10,3 +10,10 @@
     width: 32px;
     height: 32px;
 }
+
+a {
+    &.active {
+        color: #7d007dfa;
+        text-decoration: underline;
+    }
+}
