@@ -1,4 +1,4 @@
-﻿using Core.Entities;
+﻿using API.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -8,32 +8,30 @@ public class BuggyController : BaseApiController
     [HttpGet("unauthorized")]
     public IActionResult GetUnauthorized()
     {
-        return Unauthorized("You are not authorized to access this resource.");
+        return Unauthorized();
     }
 
     [HttpGet("badrequest")]
     public IActionResult GetBadRequest()
     {
-        return BadRequest("This is a bad request.");
+        return BadRequest("This is not a good request");
     }
 
     [HttpGet("notfound")]
     public IActionResult GetNotFound()
     {
-        return NotFound("The requested resource was not found.");
+        return NotFound();
     }
 
     [HttpGet("internalerror")]
     public IActionResult GetInternalError()
     {
-        throw new Exception("This is an internal server error.");
+        throw new Exception("This is a test exception");
     }
 
     [HttpPost("validationerror")]
-    public IActionResult GetValidationError(Product product)
+    public IActionResult GetValidationError(CreateProductDto product)
     {
-        ModelState.AddModelError("Error", "This is a validation error.");
-        return ValidationProblem();
+        return Ok();
     }
-
 }
