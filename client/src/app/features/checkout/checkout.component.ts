@@ -28,8 +28,8 @@ import { CartService } from '../../core/services/cart.service';
 import { CurrencyPipe, JsonPipe } from '@angular/common';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { Address } from '../../shared/models/user';
-import { OrderToCreate, ShippingAddress } from '../../shared/models/order';
 import { OrderService } from '../../core/services/order.service';
+import { OrderToCreate, ShippingAddress } from '../../shared/models/order';
 
 @Component({
   selector: 'app-checkout',
