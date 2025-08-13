@@ -43,8 +43,6 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
-app.UseAuthorization();
-
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseCors(x => x
@@ -55,10 +53,14 @@ app.UseCors(x => x
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapHub<NotificationHub>("/hub/notifications");
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.MapControllers();
 app.MapGroup("api").MapIdentityApi<AppUser>();
+app.MapHub<NotificationHub>("/hub/notifications");
+app.MapFallbackToController("Index", "Fallback");
 
 try
 {
