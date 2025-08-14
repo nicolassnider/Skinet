@@ -8,12 +8,13 @@ export interface Order {
     paymentSummary: PaymentSummary
     orderItems: OrderItem[]
     subtotal: number
+    discount?: number
     status: string
     paymentIntentId: string
     total: number;
-}
-
-export interface ShippingAddress {
+  }
+  
+  export interface ShippingAddress {
     name: string
     line1: string
     line2?: string
@@ -21,26 +22,27 @@ export interface ShippingAddress {
     state: string
     postalCode: string
     country: string
-}
-
-export interface PaymentSummary {
+  }
+  
+  export interface PaymentSummary {
     last4: number
     brand: string
     expMonth: number
     expYear: number
-}
-
-export interface OrderItem {
+  }
+  
+  export interface OrderItem {
     productId: number
     productName: string
     pictureUrl: string
     price: number
     quantity: number
-}
-
-export interface OrderToCreate {
+  }
+  
+  export interface OrderToCreate {
     cartId: string;
     deliveryMethodId: number;
     shippingAddress: ShippingAddress;
     paymentSummary: PaymentSummary;
-}
+    discount?: number;
+  }
