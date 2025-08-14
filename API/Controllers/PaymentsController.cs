@@ -11,29 +11,29 @@ using Stripe;
 
 namespace API.Controllers;
 
-public class PaymentsController(
-    IPaymentService paymentService,
-    IUnitOfWork unitOfWork,
+public class PaymentsController(IPaymentService paymentService,
+    IUnitOfWork unit,
+    IHubContext<NotificationHub> hubContext,
     ILogger<PaymentsController> logger,
-    IConfiguration config,
-    IHubContext<NotificationHub> hubContext) : BaseApiController
+    IConfiguration config) : BaseApiController
 {
-    private string _whSecret = config["StripeSettings:WhSecret"]!;
+    private readonly string _whSecret = config["StripeSettings:WhSecret"]!;
+
     [Authorize]
     [HttpPost("{cartId}")]
-    public async Task<ActionResult<ShoppingCart>> CreateOrUpdatePaymentIntent(string cartId)
+    public async Task<ActionResult> CreateOrUpdatePaymentIntent(string cartId)
     {
         var cart = await paymentService.CreateOrUpdatePaymentIntent(cartId);
-        if (cart == null) return BadRequest("Problem with Cart");
-        return Ok(cart);
 
+        if (cart == null) return BadRequest("Problem with your cart on the API");
+
+        return Ok(cart);
     }
 
     [HttpGet("delivery-methods")]
     public async Task<ActionResult<IReadOnlyList<DeliveryMethod>>> GetDeliveryMethods()
     {
-        var deliveryMethods = await unitOfWork.Repository<DeliveryMethod>().ListAllAsync();
-        return Ok(deliveryMethods);
+        return Ok(await unit.Repository<DeliveryMethod>().ListAllAsync());
     }
 
     [HttpPost("webhook")]
@@ -50,7 +50,7 @@ public class PaymentsController(
                 return BadRequest("Invalid event data.");
             }
 
-            await HandlePaymentIntentSucceded(intent);
+            await HandlePaymentIntentSucceeded(intent);
 
             return Ok();
         }
@@ -66,34 +66,6 @@ public class PaymentsController(
         }
     }
 
-    private async Task HandlePaymentIntentSucceded(PaymentIntent intent)
-    {
-        if (intent.Status == "succeeded")
-        {
-            var spec = new OrderSpecification(intent.Id, true);
-            var order = await unitOfWork.Repository<Order>().GetEntityWithSpec(spec)
-                ?? throw new Exception("Order not found");
-
-            if ((long)order.GetTotal() * 100 != intent.Amount)
-            {
-                order.Status = OrderStatus.PaymentMismatch;
-            }
-            else
-            {
-                order.Status = OrderStatus.PaymentReceived;
-            }
-            await unitOfWork.Complete();
-
-            var connectionId = NotificationHub.GetConnectionIdByEmail(order.BuyerEmail);
-
-            if (!string.IsNullOrEmpty(connectionId))
-            {
-                await hubContext.Clients.Client(connectionId)
-                    .SendAsync("OrderCompleteNotification", order.ToDto());
-            }
-        }
-    }
-
     private Event ConstructStripeEvent(string json)
     {
         try
@@ -104,6 +76,39 @@ public class PaymentsController(
         {
             logger.LogError(ex, "Failed to construct Stripe event");
             throw new StripeException("Invalid signature");
+        }
+    }
+
+    private async Task HandlePaymentIntentSucceeded(PaymentIntent intent)
+    {
+        if (intent.Status == "succeeded")
+        {
+            var spec = new OrderSpecification(intent.Id, true);
+
+            var order = await unit.Repository<Order>().GetEntityWithSpec(spec)
+                        ?? throw new Exception("Order not found");
+
+            var orderTotalInCents = (long)Math.Round(order.GetTotal() * 100,
+            MidpointRounding.AwayFromZero);
+
+            if (orderTotalInCents != intent.Amount)
+            {
+                order.Status = OrderStatus.PaymentMismatch;
+            }
+            else
+            {
+                order.Status = OrderStatus.PaymentReceived;
+            }
+
+            await unit.Complete();
+
+            var connectionId = NotificationHub.GetConnectionIdByEmail(order.BuyerEmail);
+
+            if (!string.IsNullOrEmpty(connectionId))
+            {
+                await hubContext.Clients.Client(connectionId).SendAsync("OrderCompleteNotification",
+                    order.ToDto());
+            }
         }
     }
 }

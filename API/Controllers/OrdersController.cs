@@ -10,64 +10,62 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [Authorize]
-public class OrdersController(
-    ICartService cartService,
-    IUnitOfWork unitOfWork,
-    ILogger<PaymentsController> logger) : BaseApiController
+public class OrdersController(ICartService cartService, IUnitOfWork unit) : BaseApiController
 {
-    private readonly string _whSecret;
-
     [HttpPost]
-    public async Task<ActionResult<Order>> CreateOrder(CreateOrderDto createOrderDto)
+    public async Task<ActionResult<Order>> CreateOrder(CreateOrderDto orderDto)
     {
         var email = User.GetEmail();
-        var cart = await cartService.GetCartAsync(createOrderDto.CartId);
+
+        var cart = await cartService.GetCartAsync(orderDto.CartId);
+
         if (cart == null) return BadRequest("Cart not found");
-        if (cart.PaymentIntentId == null) return BadRequest("No payment intent");
+
+        if (cart.PaymentIntentId == null) return BadRequest("No payment intent for this order");
 
         var items = new List<OrderItem>();
+
         foreach (var item in cart.Items)
         {
-            var productItem = await unitOfWork.Repository<Core.Entities.Product>().GetByIdAsync(item.ProductId);
+            var productItem = await unit.Repository<Product>().GetByIdAsync(item.ProductId);
 
-            if (productItem == null) return BadRequest("Product not found");
+            if (productItem == null) return BadRequest("Problem with the order");
 
             var itemOrdered = new ProductItemOrdered
             {
                 ProductId = item.ProductId,
-                ProductName = productItem.Name,
-                PictureUrl = productItem.PictureUrl,
-
+                ProductName = item.ProductName,
+                PictureUrl = item.PictureUrl
             };
 
             var orderItem = new OrderItem
             {
                 ItemOrdered = itemOrdered,
-                Price = item.Price,
+                Price = productItem.Price,
                 Quantity = item.Quantity
             };
-
             items.Add(orderItem);
-
         }
-        var deliveryMethod = await unitOfWork.Repository<DeliveryMethod>()
-            .GetByIdAsync(createOrderDto.DeliveryMethodId);
-        if (deliveryMethod == null) return BadRequest("Delivery method not found");
+
+        var deliveryMethod = await unit.Repository<DeliveryMethod>().GetByIdAsync(orderDto.DeliveryMethodId);
+
+        if (deliveryMethod == null) return BadRequest("No delivery method selected");
 
         var order = new Order
         {
             OrderItems = items,
             DeliveryMethod = deliveryMethod,
-            ShippingAddress = createOrderDto.ShippingAddress,
-            Subtotal = items.Sum(i => i.Price * i.Quantity),
-            PaymentSummary = createOrderDto.PaymentSummary,
+            ShippingAddress = orderDto.ShippingAddress,
+            Subtotal = items.Sum(x => x.Price * x.Quantity),
+            Discount = orderDto.Discount,
+            PaymentSummary = orderDto.PaymentSummary,
             PaymentIntentId = cart.PaymentIntentId,
             BuyerEmail = email
         };
 
-        unitOfWork.Repository<Order>().Add(order);
+        unit.Repository<Order>().Add(order);
 
-        if (await unitOfWork.Complete())
+        if (await unit.Complete())
         {
             return order;
         }
@@ -80,9 +78,9 @@ public class OrdersController(
     {
         var spec = new OrderSpecification(User.GetEmail());
 
-        var orders = await unitOfWork.Repository<Order>().ListAsync(spec);
+        var orders = await unit.Repository<Order>().ListAsync(spec);
 
-        var ordersToReturn = orders.Select(order => order.ToDto()).ToList();
+        var ordersToReturn = orders.Select(o => o.ToDto()).ToList();
 
         return Ok(ordersToReturn);
     }
@@ -91,10 +89,11 @@ public class OrdersController(
     public async Task<ActionResult<OrderDto>> GetOrderById(int id)
     {
         var spec = new OrderSpecification(User.GetEmail(), id);
-        var order = await unitOfWork.Repository<Order>().GetEntityWithSpec(spec);
+
+        var order = await unit.Repository<Order>().GetEntityWithSpec(spec);
+
         if (order == null) return NotFound();
+
         return order.ToDto();
     }
-
-
 }
