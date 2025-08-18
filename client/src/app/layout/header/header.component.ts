@@ -8,10 +8,11 @@ import { CartService } from '../../core/services/cart.service';
 import { AccountService } from '../../core/services/account.service';
 import { MatDivider } from "@angular/material/divider";
 import { MatMenu, MatMenuTrigger } from "@angular/material/menu";
+import { IsAdmin } from '../../shared/directives/is-admin';
 
 @Component({
   selector: 'app-header',
-  imports: [MatIcon, MatBadge, RouterLink, RouterLinkActive, MatProgressBar, MatDivider, MatMenu, MatMenuTrigger],
+  imports: [MatIcon, MatBadge, RouterLink, RouterLinkActive, MatProgressBar, MatDivider, MatMenu, MatMenuTrigger,IsAdmin],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss']
 })
