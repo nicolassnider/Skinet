@@ -2,7 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { AdminService } from '../../core/services/admin.service';
 import { Order } from '../../shared/models/order';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { OrderParams } from '../../shared/models/orderParams';
+
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatLabel, MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DialogService } from '../../core/services/dialog.service';
+import { OrderParams } from '../../shared/models/orderParams';
 
 @Component({
   selector: 'app-admin',
